@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GCT Departures MVP</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header>
+      <div class="title">GCT Departures (MVP prototype)</div>
+      <div class="clock"><span id="timeLabel">00:00</span></div>
+      <div class="hint">Drag to scroll • Tap a train to control doors</div>
+    </header>
+
+    <main>
+      <aside class="panel left">
+        <h2>Upcoming trains</h2>
+        <div id="trainList" class="list"></div>
+        <div class="small">
+          <div><b>Legend:</b> OPEN doors = green, CLOSED = gray, BUZZING = yellow</div>
+          <div>Goal: close doors + buzz, then depart on time.</div>
+        </div>
+      </aside>
+
+      <section class="center">
+        <canvas id="world" width="1200" height="640"></canvas>
+        <div class="small centerNote">
+          (This is a rough prototype — no real GCT layout yet. Just the vibe.)
+        </div>
+      </section>
+
+      <aside class="panel right">
+        <h2>Door panel</h2>
+        <div id="selectedNone" class="small">Tap a train to open its door panel.</div>
+
+        <div id="doorPanel" class="doorPanel hidden">
+          <div class="row"><span class="label">Train</span><span id="selName" class="value"></span></div>
+          <div class="row"><span class="label">Line</span><span id="selLine" class="value"></span></div>
+          <div class="row"><span class="label">Track</span><span id="selTrack" class="value"></span></div>
+          <div class="row"><span class="label">Departs</span><span id="selDep" class="value"></span></div>
+          <div class="row"><span class="label">Doors</span><span id="selDoor" class="value"></span></div>
+          <div class="row"><span class="label">Buzzer</span><span id="selBuzz" class="value"></span></div>
+
+          <div class="buttons">
+            <button id="btnOpen">OPEN</button>
+            <button id="btnClose">CLOSE</button>
+            <button id="btnBuzz">BUZZ</button>
+          </div>
+
+          <div class="small">
+            <b>Tip:</b> If you buzz too early, late runners appear and you’ll feel guilty 😭
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="small">
+      Built as a quick “proof of concept”. If you like this, we can add: M8/M7A/M3A/diesel sounds, consists, better crowd chaos, and more tracks.
+    </footer>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
