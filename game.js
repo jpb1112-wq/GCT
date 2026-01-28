@@ -15,10 +15,17 @@ const selTrack = document.getElementById("selTrack");
 const selDep = document.getElementById("selDep");
 const selDoor = document.getElementById("selDoor");
 const selBuzz = document.getElementById("selBuzz");
+const selConsist = document.getElementById("selConsist");
+const selMaint = document.getElementById("selMaint");
+const selCond = document.getElementById("selCond");
+const selStrict = document.getElementById("selStrict");
+const selReli = document.getElementById("selReli");
 
 const btnOpen = document.getElementById("btnOpen");
 const btnClose = document.getElementById("btnClose");
 const btnBuzz = document.getElementById("btnBuzz");
+const btnSwap = document.getElementById("btnSwap");
+const opsLog = document.getElementById("opsLog");
 
 // --- Tiny WebAudio helper (no sound files needed) ---
 let audioCtx = null;
@@ -78,9 +85,27 @@ const LINES = [
 ];
 
 const TRAIN_TYPES = ["M8","M7A","M3A","DIESEL"];
+const CONDUCTORS = [
+  {name:"S. Alvarez", strictness:82, reliability:91},
+  {name:"J. Kim", strictness:64, reliability:76},
+  {name:"M. O'Neil", strictness:48, reliability:69},
+  {name:"A. Johnson", strictness:72, reliability:58},
+  {name:"R. Patel", strictness:55, reliability:83},
+  {name:"D. Ruiz", strictness:38, reliability:52}
+];
 
 function rnd(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 function clamp(v,a,b){ return Math.max(a, Math.min(b,v)); }
+
+function logEvent(message){
+  const item = document.createElement("div");
+  item.className = "logItem";
+  item.textContent = `${fmtTime(nowSec)} • ${message}`;
+  opsLog.prepend(item);
+  while(opsLog.children.length > 8){
+    opsLog.removeChild(opsLog.lastChild);
+  }
+}
 
 let startTime = performance.now();
 let nowSec = 0;
@@ -91,6 +116,13 @@ function fmtTime(s){
   return String(m).padStart(2,"0")+":"+String(r).padStart(2,"0");
 }
 
+function fmtCountdown(s){
+  if(s <= 0) return "DUE";
+  const m = Math.floor(s/60);
+  const r = Math.floor(s%60);
+  return `${String(m).padStart(2,"0")}:${String(r).padStart(2,"0")}`;
+}
+
 let nextTrainId = 100;
 const trains = [];
 const people = [];
@@ -99,9 +131,13 @@ function spawnTrain(){
   const line = rnd(LINES);
   const dest = rnd(line.destinationPool);
   const trType = rnd(TRAIN_TYPES);
+  const conductor = rnd(CONDUCTORS);
   const track = rnd(TRACKS);
   const departIn = 40 + Math.floor(Math.random()*70); // 40–110 seconds from now
   const departAt = nowSec + departIn;
+  const maintenanceDueAt = departAt + (80 + Math.random()*120);
+  const statusRoll = Math.random();
+  const consistStatus = statusRoll < 0.07 ? "BROKEN" : (statusRoll < 0.22 ? "MAINT" : "OK");
 
   const t = {
     id: nextTrainId++,
@@ -110,6 +146,11 @@ function spawnTrain(){
     dest,
     type: trType,
     track: track.index,
+    conductor,
+    consistStatus,
+    maintenanceDueAt,
+    swapUntil: null,
+    reportedIssue: false,
     x: 120 + Math.floor(Math.random()* (WORLD.w - 240)),
     y: track.y,
     w: 180,
@@ -123,6 +164,7 @@ function spawnTrain(){
   };
   t.doorX = t.x + t.w * 0.72;
   trains.push(t);
+  logEvent(`Scheduled ${t.line} Track ${t.track} (${t.type}) to ${t.dest}.`);
 
   // initial crowd
   const crowdSize = 8 + Math.floor(Math.random()*22);
@@ -168,6 +210,11 @@ function updateDoorPanel(t){
   selDep.textContent = fmtTime(t.departAt);
   selDoor.textContent = t.doorOpen ? "OPEN" : "CLOSED";
   selBuzz.textContent = t.buzzing ? "ON" : "OFF";
+  selConsist.textContent = t.consistStatus;
+  selMaint.textContent = fmtCountdown(t.maintenanceDueAt - nowSec);
+  selCond.textContent = t.conductor.name;
+  selStrict.textContent = `${t.conductor.strictness}%`;
+  selReli.textContent = `${t.conductor.reliability}%`;
 }
 
 btnOpen.addEventListener("click", ()=>{
@@ -195,10 +242,27 @@ btnBuzz.addEventListener("click", ()=>{
   pattern(t.type);
 
   // spawn late runners
-  const lateCount = 2 + Math.floor(Math.random()*10);
+  const strictnessFactor = clamp(100 - t.conductor.strictness, 10, 90) / 100;
+  const lateCount = 1 + Math.floor(Math.random()*(6 + strictnessFactor * 10));
   for(let i=0;i<lateCount;i++){
     spawnPersonNearTrain(t, true);
   }
+  updateDoorPanel(t);
+});
+
+btnSwap.addEventListener("click", ()=>{
+  const t = getTrainById(selectedTrainId);
+  if(!t || t.state!=="boarding") return;
+  if(t.swapUntil && nowSec < t.swapUntil) return;
+
+  const swapDuration = 25 + Math.random()*25;
+  t.swapUntil = nowSec + swapDuration;
+  t.consistStatus = "OK";
+  t.departAt += 20;
+  t.buzzing = false;
+  t.doorOpen = true;
+  t.reportedIssue = false;
+  logEvent(`Consist swap in progress on Track ${t.track} (${Math.ceil(swapDuration)}s).`);
   updateDoorPanel(t);
 });
 
@@ -271,6 +335,7 @@ function rebuildTrainList(){
         <div class="tag ${tag[1]}">${tag[0]}</div>
       </div>
       <div class="small">Track ${t.track} • ${t.type} • departs ${fmtTime(t.departAt)}</div>
+      <div class="small">Consist: ${t.consistStatus} • Conductor: ${t.conductor.name} (${t.conductor.reliability}%)</div>
     `;
     trainList.appendChild(card);
   }
@@ -295,11 +360,55 @@ function update(dt){
   for(const t of trains){
     if(t.state==="gone") continue;
 
+    if(t.consistStatus === "OK" && nowSec >= t.maintenanceDueAt){
+      t.consistStatus = "MAINT";
+      logEvent(`Maintenance due for ${t.line} Track ${t.track}.`);
+    }
+
+    if(t.swapUntil && nowSec < t.swapUntil){
+      if(!t.reportedIssue){
+        t.reportedIssue = true;
+      }
+    } else if(t.swapUntil && nowSec >= t.swapUntil){
+      t.swapUntil = null;
+      t.reportedIssue = false;
+      logEvent(`Consist swap complete on Track ${t.track}.`);
+    }
+
     // if time passed and doors closed + buzzing, depart
     const timeToGo = nowSec >= t.departAt;
     const readyToDepart = (t.buzzing && !t.doorOpen);
 
     if(t.state==="boarding" && timeToGo && readyToDepart){
+      if(t.swapUntil){
+        if(!t.reportedIssue){
+          logEvent(`Holding ${t.line} Track ${t.track} for consist swap.`);
+          t.reportedIssue = true;
+        }
+        continue;
+      }
+
+      if(t.consistStatus === "BROKEN"){
+        if(!t.reportedIssue){
+          logEvent(`Consist fault on Track ${t.track}. Swap required.`);
+          t.reportedIssue = true;
+        }
+        continue;
+      }
+
+      if(t.consistStatus === "MAINT" && Math.random() < 0.35){
+        t.consistStatus = "BROKEN";
+        logEvent(`Maintenance issue: ${t.line} Track ${t.track} failed inspection.`);
+        continue;
+      }
+
+      const reliabilityCheck = Math.random()*100;
+      if(reliabilityCheck > t.conductor.reliability){
+        t.departAt += 15 + Math.random()*20;
+        logEvent(`Crew delay on Track ${t.track} (${t.conductor.name}).`);
+        continue;
+      }
+
       t.state = "departing";
       t.departStartedAt = nowSec;
       // little departure "whoosh"
