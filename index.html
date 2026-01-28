@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>GCT Departures MVP</title>
+  <title>GCT Dispatch Desk</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="app">
     <header>
-      <div class="title">GCT Departures (MVP prototype)</div>
+      <div class="title">GCT Dispatch Desk (realism pass)</div>
       <div class="clock"><span id="timeLabel">00:00</span></div>
-      <div class="hint">Drag to scroll • Tap a train to control doors</div>
+      <div class="hint">Drag to scroll • Tap a train to control doors &amp; consist</div>
     </header>
 
     <main>
@@ -20,14 +20,19 @@
         <div id="trainList" class="list"></div>
         <div class="small">
           <div><b>Legend:</b> OPEN doors = green, CLOSED = gray, BUZZING = yellow</div>
-          <div>Goal: close doors + buzz, then depart on time.</div>
+          <div>Goal: close doors + buzz, keep consist healthy, depart on time.</div>
+        </div>
+        <div class="logWrap">
+          <h3>Ops log</h3>
+          <div id="opsLog" class="log"></div>
         </div>
       </aside>
 
       <section class="center">
         <canvas id="world" width="1200" height="640"></canvas>
         <div class="small centerNote">
-          (This is a rough prototype — no real GCT layout yet. Just the vibe.)
+          (Rough prototype — the track layout is still symbolic, but operations now track consist
+          condition and conductor reliability.)
         </div>
       </section>
 
@@ -42,22 +47,28 @@
           <div class="row"><span class="label">Departs</span><span id="selDep" class="value"></span></div>
           <div class="row"><span class="label">Doors</span><span id="selDoor" class="value"></span></div>
           <div class="row"><span class="label">Buzzer</span><span id="selBuzz" class="value"></span></div>
+          <div class="row"><span class="label">Consist</span><span id="selConsist" class="value"></span></div>
+          <div class="row"><span class="label">Maint due</span><span id="selMaint" class="value"></span></div>
+          <div class="row"><span class="label">Conductor</span><span id="selCond" class="value"></span></div>
+          <div class="row"><span class="label">Strictness</span><span id="selStrict" class="value"></span></div>
+          <div class="row"><span class="label">Reliability</span><span id="selReli" class="value"></span></div>
 
           <div class="buttons">
             <button id="btnOpen">OPEN</button>
             <button id="btnClose">CLOSE</button>
             <button id="btnBuzz">BUZZ</button>
+            <button id="btnSwap">SWAP CONSIST</button>
           </div>
 
           <div class="small">
-            <b>Tip:</b> If you buzz too early, late runners appear and you’ll feel guilty 😭
+            <b>Tip:</b> Consist swaps take time. Low-reliability crews may miss the slot.
           </div>
         </div>
       </aside>
     </main>
 
     <footer class="small">
-      Built as a quick “proof of concept”. If you like this, we can add: M8/M7A/M3A/diesel sounds, consists, better crowd chaos, and more tracks.
+      Built as a quick “proof of concept”. Next up: realistic GCT track map, consist bays, signal holds, and dispatch radio chatter.
     </footer>
   </div>
 
