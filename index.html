@@ -3,61 +3,80 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>GCT Departures MVP</title>
+  <title>GCT Fleet Office</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="app">
-    <header>
-      <div class="title">GCT Departures (MVP prototype)</div>
-      <div class="clock"><span id="timeLabel">00:00</span></div>
-      <div class="hint">Drag to scroll • Tap a train to control doors</div>
+  <div id="app" class="office">
+    <header class="topbar">
+      <div>
+        <div class="title">Grand Central Fleet Office</div>
+        <div class="subtitle">First-person dispatch desk • morning rush</div>
+      </div>
+      <div class="clock">
+        <div class="clock-label">Clock</div>
+        <div id="timeLabel" class="clock-time">06:00</div>
+      </div>
     </header>
 
-    <main>
-      <aside class="panel left">
-        <h2>Upcoming trains</h2>
-        <div id="trainList" class="list"></div>
-        <div class="small">
-          <div><b>Legend:</b> OPEN doors = green, CLOSED = gray, BUZZING = yellow</div>
-          <div>Goal: close doors + buzz, then depart on time.</div>
+    <main class="desk">
+      <section class="monitor left">
+        <h2>Timetable &amp; assignments</h2>
+        <div class="legend">
+          <span class="pill status-waiting">Boarding</span>
+          <span class="pill status-ready">Doors Closed</span>
+          <span class="pill status-departed">Departed</span>
+          <span class="pill status-hold">Hold</span>
         </div>
-      </aside>
-
-      <section class="center">
-        <canvas id="world" width="1200" height="640"></canvas>
-        <div class="small centerNote">
-          (This is a rough prototype — no real GCT layout yet. Just the vibe.)
-        </div>
+        <div id="schedule" class="schedule"></div>
       </section>
 
-      <aside class="panel right">
-        <h2>Door panel</h2>
-        <div id="selectedNone" class="small">Tap a train to open its door panel.</div>
-
-        <div id="doorPanel" class="doorPanel hidden">
-          <div class="row"><span class="label">Train</span><span id="selName" class="value"></span></div>
-          <div class="row"><span class="label">Line</span><span id="selLine" class="value"></span></div>
-          <div class="row"><span class="label">Track</span><span id="selTrack" class="value"></span></div>
-          <div class="row"><span class="label">Departs</span><span id="selDep" class="value"></span></div>
-          <div class="row"><span class="label">Doors</span><span id="selDoor" class="value"></span></div>
-          <div class="row"><span class="label">Buzzer</span><span id="selBuzz" class="value"></span></div>
-
-          <div class="buttons">
-            <button id="btnOpen">OPEN</button>
-            <button id="btnClose">CLOSE</button>
-            <button id="btnBuzz">BUZZ</button>
-          </div>
-
-          <div class="small">
-            <b>Tip:</b> If you buzz too early, late runners appear and you’ll feel guilty 😭
+      <section class="monitor center">
+        <div class="monitor-top">
+          <h2>Track window</h2>
+          <div class="view-toggle">
+            <button id="btnOfficeView" class="toggle active">Office View</button>
+            <button id="btnTrackView" class="toggle">Track View</button>
           </div>
         </div>
-      </aside>
+        <div class="canvas-wrap">
+          <canvas id="scene" width="900" height="360"></canvas>
+        </div>
+        <div class="small note">Watch trains depart in real time from the office window.</div>
+      </section>
+
+      <section class="monitor right">
+        <h2>Control panel</h2>
+        <div id="emptyPanel" class="small">Select a train from the timetable.</div>
+        <div id="controlPanel" class="panel hidden">
+          <div class="row"><span>Train</span><strong id="selTrain"></strong></div>
+          <div class="row"><span>Line</span><strong id="selLine"></strong></div>
+          <div class="row"><span>Track</span><strong id="selTrack"></strong></div>
+          <div class="row"><span>Departs</span><strong id="selTime"></strong></div>
+          <div class="row"><span>Consist</span><strong id="selConsist"></strong></div>
+          <div class="row"><span>Conductor</span><strong id="selConductor"></strong></div>
+          <div class="row"><span>Strictness</span><strong id="selStrict"></strong></div>
+          <div class="row"><span>Reliability</span><strong id="selReliability"></strong></div>
+          <div class="row"><span>Doors</span><strong id="selDoors"></strong></div>
+          <div class="row"><span>Late runners</span><strong id="selLate"></strong></div>
+          <div class="actions">
+            <button id="btnOpenDoors">Open Doors</button>
+            <button id="btnCloseDoors">Close Doors</button>
+            <button id="btnBuzz">Buzz &amp; Dispatch</button>
+          </div>
+          <div class="small tip">
+            Use the timetable to assign consists and conductors before the slot.
+          </div>
+        </div>
+        <div class="log">
+          <h3>Operations log</h3>
+          <div id="opsLog" class="log-list"></div>
+        </div>
+      </section>
     </main>
 
-    <footer class="small">
-      Built as a quick “proof of concept”. If you like this, we can add: M8/M7A/M3A/diesel sounds, consists, better crowd chaos, and more tracks.
+    <footer class="small footer">
+      Fleet management prototype: assign consists and conductors, close doors, then buzz to dispatch on time.
     </footer>
   </div>
 
